@@ -1,6 +1,6 @@
-# AI Antialiasing
+# AIAA
 
-Dubbed AIAA, AI Antialiasing is a techinique that uses a neural network to simulate the high-quality antialiasing of SSAA4x as a fast post process.
+AI Antialiasing is a techinique that uses a neural network to simulate the high-quality antialiasing of SSAA4x as a fast post process.
 
 The model is currently trained on a set of 512 renders of ```demo_scene``` at both (1920x1080) and (3840x2160) downscaled for antialiasing.
 
@@ -20,15 +20,18 @@ Run ```check_version.py``` to see if you can run on a CUDA GPU.
 
 # Results
 
-Below is a comparison of a frame aliased, at SSAA4x, and AIAA.
+Below is a comparison of a frame aliased, at SSAA4x, and AIAA (Click to view images in full resolution).
 
-![](output/test/test.png)
+<img src="output/test/test.png" width="1920" height="1080">
+
 *Alias*
 
-![](renders/antialias/demo_scene_frame0000_antialias.png)
+<img src="renders/antialias/demo_scene_frame0000_antialias.png" width="1920" height="1080">
+
 *SSAA4x*
 
-![](output/result/result.png)
+<img src="output/result/result.png" width="1920" height="1080">
+
 *AIAA*
 
 # Dependencies
