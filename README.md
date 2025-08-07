@@ -1,6 +1,6 @@
-# AIAA
+# AI Antialiasing
 
-AI Antialiasing is a techinique that uses a neural network to simulate the high-quality antialiasing of SSAA4x as a fast post process.
+AIAA is a techinique that uses a neural network to simulate the high-quality antialiasing of SSAA4x as a fast post process.
 
 The model is currently trained on a set of 512 renders of ```demo_scene``` at both (1920x1080) and (3840x2160) downscaled for antialiasing.
 
