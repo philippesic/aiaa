@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as T
+from torch.amp import autocast, GradScaler
 
 class AntiAliasingDataset(Dataset):
     def __init__(self, alias_dir, ssaa_dir, transform=None):
@@ -27,19 +28,17 @@ class AntiAliasingNetwork(nn.Module):
     def __init__(self):
         super(AntiAliasingNetwork, self).__init__()
         self.net = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.Conv2d(3, 16, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.BatchNorm2d(64),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.Conv2d(16, 16, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.BatchNorm2d(64),
-            nn.Conv2d(64, 3, kernel_size=3, padding=1)
+            nn.Conv2d(16, 3, kernel_size=3, padding=1)
         )
 
     def forward(self, x):
         return self.net(x) + x
-
 def train():
+    torch.backends.cudnn.benchmark = True
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using Device: {device}")
 
@@ -51,12 +50,14 @@ def train():
             T.ToTensor()
         ])
     )
-    loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=2)
+    loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=2, pin_memory=True)
 
     model = AntiAliasingNetwork().to(device)
+    model = torch.compile(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     criterion = nn.L1Loss()
 
+    scaler = GradScaler("cuda") 
     EPOCHS = 20
     os.makedirs("./checkpoints", exist_ok=True)
 
@@ -66,15 +67,19 @@ def train():
         total_tp, total_fp, total_fn = 0, 0, 0
 
         for aliased, target in tqdm(loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
-            aliased, target = aliased.to(device), target.to(device)
+            aliased, target = aliased.to(device, non_blocking=True), target.to(device, non_blocking=True)
 
-            output = model(aliased)
-            loss = criterion(output, target)
-            loss_val = loss.item()
             optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            epoch_loss += loss_val
+
+            with autocast("cuda"):
+                output = model(aliased)
+                loss = criterion(output, target)
+
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+
+            epoch_loss += loss.item()
 
             with torch.no_grad():
                 pred_gray   = output.mean(dim=1)
@@ -82,7 +87,6 @@ def train():
                 diff = torch.abs(pred_gray - target_gray)
 
                 threshold = 0.05
-
                 tp = ((diff < threshold) & (target_gray > 0.1)).sum().item()
                 fp = ((diff < threshold) & (target_gray <= 0.1)).sum().item()
                 fn = ((diff >= threshold) & (target_gray > 0.1)).sum().item()

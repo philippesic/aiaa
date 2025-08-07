@@ -4,11 +4,9 @@ AI Antialiasing is a techinique that uses a neural network to simulate the high-
 
 The model is currently trained on a set of 512 renders of ```demo_scene``` at both (1920x1080) and (3840x2160) downscaled for antialiasing.
 
-Currently, the model runs at approximately 270-350ms, or a possible framerate of 2.8-3.5 fps.
+After compilation, the model averages a 2.5ms frametime impact for a maximum possible framerate of approximately 400fps.
 
 Limited training data also confines this model's accuracy to ```demo_scene```.
-
-Future updates will include substantial performance improvements and applicability to imagery beyond the demo.
 
 # How to Run
 
@@ -16,7 +14,7 @@ There is no official implementation yet. For now, clone the repository and open 
 
 Then run ```main.py``` to antialias the image, stored in ```output/```.
 
-Run ```check_version.py``` to see if you can run on a CUDA GPU.
+Run ```check_version.py``` to check Cuda Compatability.
 
 # Results
 
@@ -34,9 +32,18 @@ Below is a comparison of a frame aliased, at SSAA4x, and AIAA (Click to view ima
 
 *AIAA*
 
+# Requirements
+- Cuda-capable GPU with compute > 7.0 (RTX 20-Series or Newer)
+- Python 3.9 - 3.12
+
 # Dependencies
 
 - Pillow
-- Torch with Cuda 12.6
-- Torchvision
+- Torch 2.8.0 with Cuda 12.6
+- Torchvision 0.23.0
 - TQDM
+- Triton-Windows 3.4.0.post20
+
+# Changelog
+- Optimized model complexity and compilation
+- Average Framerate increase: 3 -> 400 fps

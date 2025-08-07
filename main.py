@@ -5,41 +5,51 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as TF
 import os
 import time
+from torch.amp import autocast
 
 def main():
+    TOTAL_FRAMETIME = 0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = AntiAliasingNetwork().to(device)
-    model.load_state_dict(torch.load("./checkpoints/model_epoch19.pth", map_location=device))
+    model = AntiAliasingNetwork().to(device, memory_format=torch.channels_last)
     model.eval()
 
-    def ensure_dir(path):
-        os.makedirs(path, exist_ok=True)
+    model = torch.compile(model)
 
-    ensure_dir("./output/test/")
-    ensure_dir("./output/result/")
+    model.load_state_dict(torch.load("./checkpoints/model_epoch20.pth", map_location=device))
+
+    os.makedirs("./output/result", exist_ok=True)
 
     img = Image.open("./output/test/test.png").convert("RGB")
     transform = T.Compose([
         T.Resize((1080, 1920)),
         T.ToTensor()
     ])
-    input_tensor = transform(img).unsqueeze(0).to(device)
+    input_tensor = transform(img).unsqueeze(0).to(device, non_blocking=True, memory_format=torch.channels_last)
 
-    with torch.no_grad():
-        torch.cuda.synchronize()
-        start_time = time.time()
+    for i in range(1000):
+        with torch.inference_mode():
+            start_time = time.time()
 
-        output = model(input_tensor).clamp(0, 1)
+            with autocast("cuda"):
+                output = model(input_tensor).clamp(0, 1)
 
-        torch.cuda.synchronize()
-        elapsed_time_ms = (time.time() - start_time) * 1000
+            torch.cuda.synchronize()
+            elapsed_time_ms = (time.time() - start_time) * 1000
 
-    print(f"Inference Time: {elapsed_time_ms:.2f} ms")
-    print(f"Maximum Possible Framerate: {(1000/elapsed_time_ms):.1f} fps")
+        print(f"Pass: {i+1}")
+        if (i==0):
+            print(" (Compilation Pass)")
+        else:
+            TOTAL_FRAMETIME += elapsed_time_ms
+        print(f"Inference Time: {elapsed_time_ms:.2f} ms")
+        print(f"Maximum Possible Framerate: {(1000 / elapsed_time_ms):.1f} fps\n")
+        
 
-    out_img = TF.to_pil_image(output.squeeze().cpu())
+    print(f"Average Framerate: {(1000/(TOTAL_FRAMETIME/(i))):.1f} fps\n")
+
+    out_img = TF.to_pil_image(output.squeeze(0).float().cpu())
     out_img.save("./output/result/result.png")
-    print("Saved: result.png")
+    print("Saved: result.png\n")
 
 if __name__ == "__main__":
     main()
