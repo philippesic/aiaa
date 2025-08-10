@@ -1,16 +1,16 @@
 # This script is run as a blender script attatched to demo_scene.blend and is coordinate-specific to the scene
 
-# Generates aliased and 4x resolution frames as training data
+# Generates aliased and supersample resolution frames as training data
 
 import bpy, os
 import mathutils, random
 
 ####################
-BASE_W = 1920
-BASE_H = 1080
-ALIAS_DIR = "//renders/alias/"
-SSAA_DIR  = "//renders/ssaa4x/"
-N_FRAMES = 512
+BASE_W = 960
+BASE_H = 540
+ALIAS_DIR = "//renders/540/alias/"
+SSAA_DIR  = "//renders/540/ssaa16x/"
+N_FRAMES = 1024
 SKIP_EXISTING = False
 ####################
 
@@ -59,9 +59,9 @@ for i in range(N_FRAMES):
         bpy.ops.render.render(write_still=True)
 
     # SS
-    ssaa_path = bpy.path.abspath(SSAA_DIR + f"{comp_prefix}_frame{i:04d}_ssaa4x.png")
+    ssaa_path = bpy.path.abspath(SSAA_DIR + f"{comp_prefix}_frame{i:04d}_ssaa16x.png")
     if not SKIP_EXISTING or not os.path.exists(ssaa_path):
-        scene.render.resolution_percentage = 200
+        scene.render.resolution_percentage = 400
         scene.render.filepath = ssaa_path
         bpy.ops.render.render(write_still=True)
 

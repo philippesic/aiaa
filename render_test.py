@@ -7,9 +7,9 @@ import bpy, os
 import mathutils, random
 
 ####################
-BASE_W = 1920
-BASE_H = 1080
-OUTPUT_DIR = "//output/test/"
+BASE_W = 960
+BASE_H = 540
+OUTPUT_DIR = "//output/540/test/"
 N_FRAMES = 1
 SKIP_EXISTING = False
 ####################

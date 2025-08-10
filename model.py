@@ -43,10 +43,10 @@ def train():
     print(f"Using Device: {device}")
 
     dataset = AntiAliasingDataset(
-        alias_dir="./renders/alias",
-        ssaa_dir="./renders/antialias",
+        alias_dir="./renders/540/alias",
+        ssaa_dir="./renders/540/antialias",
         transform=T.Compose([
-            T.Resize((1080, 1920)),
+            T.Resize((960, 540)),
             T.ToTensor()
         ])
     )
@@ -99,7 +99,7 @@ def train():
         recall    = total_tp / (total_tp + total_fn + 1e-8)
 
         print(f"Epoch {epoch+1} Loss: {epoch_loss / len(loader):.6f} | Precision: {precision:.4f} | Recall: {recall:.4f}")
-        torch.save(model.state_dict(), f"./checkpoints/model_epoch{epoch+1}.pth")
+        torch.save(model.state_dict(), f"./checkpoints/540/model_epoch{epoch+1}.pth")
         torch.cuda.empty_cache()
 
 if __name__ == "__main__":

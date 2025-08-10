@@ -2,9 +2,9 @@
 
 AIAA is a techinique that uses a neural network to simulate the high-quality antialiasing of SSAA4x as a fast post process.
 
-The model is currently trained on a set of 512 renders of ```demo_scene``` at both (1920x1080) and (3840x2160) downscaled for antialiasing.
+The model is currently trained on a set of renders of ```demo_scene``` at both stadard and supersampled resolutions downscaled for antialiasing.
 
-After compilation, the model averages a 2.5ms frametime impact for a maximum possible framerate of approximately 400fps.
+On a 2080ti the model averages a maximum possible framerate of approximately 400 fps (at 1080p and 4x supersampling) and 1400 fps (at 540p and 16x supersampling).
 
 Limited training data also confines this model's accuracy to ```demo_scene```.
 
@@ -18,17 +18,17 @@ Run ```check_version.py``` to check Cuda Compatability.
 
 # Results
 
-Below is a comparison of a frame aliased, at SSAA4x, and AIAA (Click to view images in full resolution).
+Below is a comparison of a frame aliased, supersampled, and AIAA at 1080p (Click to view images in full resolution).
 
-<img src="output/test/test.png" width="1920" height="1080">
+<img src="output/1080/test/test.png" width="1920" height="1080">
 
 *Alias*
 
-<img src="renders/antialias/demo_scene_frame0000_antialias.png" width="1920" height="1080">
+<img src="renders/1080/antialias/demo_scene_frame0000_antialias.png" width="1920" height="1080">
 
 *SSAA4x*
 
-<img src="output/result/result.png" width="1920" height="1080">
+<img src="output/1080/result/result.png" width="1920" height="1080">
 
 *AIAA*
 
@@ -45,5 +45,4 @@ Below is a comparison of a frame aliased, at SSAA4x, and AIAA (Click to view ima
 - Triton-Windows 3.4.0.post20
 
 # Changelog
-- Optimized model complexity and compilation
-- Average Framerate increase: 3 -> 400 fps
+- Trained on 540p image data

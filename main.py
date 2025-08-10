@@ -15,40 +15,40 @@ def main():
 
     model = torch.compile(model)
 
-    model.load_state_dict(torch.load("./checkpoints/model_epoch20.pth", map_location=device))
+    model.load_state_dict(torch.load("./checkpoints/540/model_epoch20.pth", map_location=device))
 
-    os.makedirs("./output/result", exist_ok=True)
+    os.makedirs("./output/540/result", exist_ok=True)
 
-    img = Image.open("./output/test/test.png").convert("RGB")
+    img = Image.open("./output/540/test/test.png").convert("RGB")
     transform = T.Compose([
-        T.Resize((1080, 1920)),
+        T.Resize((540, 960)),
         T.ToTensor()
     ])
     input_tensor = transform(img).unsqueeze(0).to(device, non_blocking=True, memory_format=torch.channels_last)
 
     for i in range(1000):
         with torch.inference_mode():
-            start_time = time.time()
+            start_time = time.perf_counter()
 
             with autocast("cuda"):
                 output = model(input_tensor).clamp(0, 1)
 
             torch.cuda.synchronize()
-            elapsed_time_ms = (time.time() - start_time) * 1000
+            elapsed_time_ms = (time.perf_counter() - start_time) * 1000
 
         print(f"Pass: {i+1}")
         if (i==0):
             print(" (Compilation Pass)")
         else:
             TOTAL_FRAMETIME += elapsed_time_ms
-        print(f"Inference Time: {elapsed_time_ms:.2f} ms")
-        print(f"Maximum Possible Framerate: {(1000 / elapsed_time_ms):.1f} fps\n")
+        print(f"Inference Time: {elapsed_time_ms:.4f} ms")
+        print(f"Maximum Possible Framerate: {(1000 / elapsed_time_ms):.2f} fps\n")
         
 
-    print(f"Average Framerate: {(1000/(TOTAL_FRAMETIME/(i))):.1f} fps\n")
+    print(f"Average Framerate: {(1000/(TOTAL_FRAMETIME/(i))):.2f} fps\n")
 
     out_img = TF.to_pil_image(output.squeeze(0).float().cpu())
-    out_img.save("./output/result/result.png")
+    out_img.save("./output/540/result/result.png")
     print("Saved: result.png\n")
 
 if __name__ == "__main__":
