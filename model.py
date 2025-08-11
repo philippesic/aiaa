@@ -27,26 +27,41 @@ class AntiAliasingDataset(Dataset):
 class AntiAliasingNetwork(nn.Module):
     def __init__(self):
         super(AntiAliasingNetwork, self).__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(16, 16, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(16, 3, kernel_size=3, padding=1)
-        )
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.relu1 = nn.ReLU(inplace=True)
+
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.relu2 = nn.ReLU(inplace=True)
+
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.relu3 = nn.ReLU(inplace=True)
+
+        self.conv4 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.relu4 = nn.ReLU(inplace=True)
+
+        self.conv5 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.relu5 = nn.ReLU(inplace=True)
+
+        self.conv6 = nn.Conv2d(64, 3, kernel_size=3, padding=1)
 
     def forward(self, x):
-        return self.net(x) + x
-def train():
+        out = self.relu1(self.conv1(x))
+        out = self.relu2(self.conv2(out))
+        out = self.relu3(self.conv3(out))
+        out = self.relu4(self.conv4(out))
+        out = self.relu5(self.conv5(out))
+        out = self.conv6(out)
+        return out + x
+def train(width, height):
     torch.backends.cudnn.benchmark = True
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using Device: {device}")
 
     dataset = AntiAliasingDataset(
-        alias_dir="./renders/540/alias",
-        ssaa_dir="./renders/540/antialias",
+        alias_dir=f"./renders/{height}/alias",
+        ssaa_dir=f"./renders/{height}/antialias",
         transform=T.Compose([
-            T.Resize((960, 540)),
+            T.Resize((int(width), int(height))),
             T.ToTensor()
         ])
     )
@@ -99,8 +114,9 @@ def train():
         recall    = total_tp / (total_tp + total_fn + 1e-8)
 
         print(f"Epoch {epoch+1} Loss: {epoch_loss / len(loader):.6f} | Precision: {precision:.4f} | Recall: {recall:.4f}")
-        torch.save(model.state_dict(), f"./checkpoints/540/model_epoch{epoch+1}.pth")
+        torch.save(model.state_dict(), f"./checkpoints/{height}/model_epoch{epoch+1}.pth")
         torch.cuda.empty_cache()
 
 if __name__ == "__main__":
-    train()
+    import sys
+    train(sys.argv[1], sys.argv[2])

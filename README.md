@@ -4,15 +4,11 @@ AIAA is a techinique that uses a neural network to simulate the high-quality ant
 
 The model is currently trained on a set of renders of ```demo_scene``` at both stadard and supersampled resolutions downscaled for antialiasing.
 
-On a 2080ti the model averages a maximum possible framerate of approximately 400 fps (at 1080p and 4x supersampling) and 1400 fps (at 540p and 16x supersampling).
-
 Limited training data also confines this model's accuracy to ```demo_scene```.
 
 # How to Run
 
-There is no official implementation yet. For now, clone the repository and open ```demo_scene.blend``` in Blender. Run ```render_test.py``` in the scripting tab to render at a random camera position (or tweak to your liking).
-
-Then run ```main.py``` to antialias the image, stored in ```output/```.
+There is no official implementation yet. For now, clone the repository and run ```main.py``` which will walk you through generating data, training, and running.
 
 Run ```check_version.py``` to check Cuda Compatability.
 
@@ -45,4 +41,5 @@ Below is a comparison of a frame aliased, supersampled, and AIAA at 1080p (Click
 - Triton-Windows 3.4.0.post20
 
 # Changelog
-- Trained on 540p image data
+- Tuned Model Quality
+- Added ```main.py``` for execution

@@ -1,55 +1,93 @@
-import torch
-from model import AntiAliasingNetwork
-from PIL import Image
-import torchvision.transforms as T
-import torchvision.transforms.functional as TF
-import os
-import time
-from torch.amp import autocast
+import inference, model, downscale
+from inference import Infer
+from model import train
+from downscale import Downscale
+import render_data, render_test
+import subprocess, os, re, sys
 
 def main():
-    TOTAL_FRAMETIME = 0
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = AntiAliasingNetwork().to(device, memory_format=torch.channels_last)
-    model.eval()
+    SELECTION = int(input("Select Operation:\n 1: Generate Training Data\n 2: Generate Test Image\n 3: Train Model\n 4: Run Inference\n"))
+    BASE_W = str(input("Target Resolution Width:\n"))
+    BASE_H = str(input("Target Resolution Height:\n"))
 
-    model = torch.compile(model)
+    match SELECTION:
+        case 1:
+            N_FRAMES = input("Number of training Images:\n")
+            SS_TARGET = input("Supersampled Resolution (EG 4 for 4x resolution):\n")
 
-    model.load_state_dict(torch.load("./checkpoints/540/model_epoch20.pth", map_location=device))
+            ver = re.search(r'(\d+\.\d+)', "Blender 4.5")
+            if ver:
+                version_number = ver.group(1)
 
-    os.makedirs("./output/540/result", exist_ok=True)
+            blender_path = f"C:/Program Files/Blender Foundation/Blender {version_number}/blender.exe"
+            script_path = "./render_data.py"
 
-    img = Image.open("./output/540/test/test.png").convert("RGB")
-    transform = T.Compose([
-        T.Resize((540, 960)),
-        T.ToTensor()
-    ])
-    input_tensor = transform(img).unsqueeze(0).to(device, non_blocking=True, memory_format=torch.channels_last)
+            if os.path.exists(blender_path):
+                print("Blender Installation Found")
+            else:
+                root = Tk()
+                root.withdraw()
 
-    for i in range(1000):
-        with torch.inference_mode():
-            start_time = time.perf_counter()
+                file_path = filedialog.askopenfilename(
+                title="Select a Blender Installation",
+                filetypes=[("Executable", "*.exe")]
+                )
 
-            with autocast("cuda"):
-                output = model(input_tensor).clamp(0, 1)
+            command = [
+                blender_path,
+                "./demo_scene.blend",
+                "--background",
+                "--python", script_path,
+                "--",
+                str(BASE_W),
+                str(BASE_H),
+                str(N_FRAMES),
+                str(SS_TARGET),
+            ]
 
-            torch.cuda.synchronize()
-            elapsed_time_ms = (time.perf_counter() - start_time) * 1000
+            subprocess.run(command)
 
-        print(f"Pass: {i+1}")
-        if (i==0):
-            print(" (Compilation Pass)")
-        else:
-            TOTAL_FRAMETIME += elapsed_time_ms
-        print(f"Inference Time: {elapsed_time_ms:.4f} ms")
-        print(f"Maximum Possible Framerate: {(1000 / elapsed_time_ms):.2f} fps\n")
+            downscale.Downscale(BASE_W, BASE_H, SS_TARGET)
         
+        case 2:
+            ver = re.search(r'(\d+\.\d+)', "Blender 4.5")
+            if ver:
+                version_number = ver.group(1)
 
-    print(f"Average Framerate: {(1000/(TOTAL_FRAMETIME/(i))):.2f} fps\n")
+            blender_path = f"C:/Program Files/Blender Foundation/Blender {version_number}/blender.exe"
+            script_path = "./render_test.py"
 
-    out_img = TF.to_pil_image(output.squeeze(0).float().cpu())
-    out_img.save("./output/540/result/result.png")
-    print("Saved: result.png\n")
+
+            if os.path.exists(blender_path):
+                print("Blender Installation Found")
+            else:
+                root = Tk()
+                root.withdraw()
+
+                file_path = filedialog.askopenfilename(
+                title="Select a Blender Installation",
+                filetypes=[("Executable", "*.exe")]
+                )
+
+            command = [
+                blender_path,
+                "./demo_scene.blend",
+                "--background",
+                "--python", script_path,
+                "--",
+                str(BASE_W),
+                str(BASE_H)
+            ]
+
+            subprocess.run(command)
+
+        case 3:
+            train(BASE_W, BASE_H)
+        
+        case 4:
+            Infer(BASE_W, BASE_H)
+
 
 if __name__ == "__main__":
     main()
+
