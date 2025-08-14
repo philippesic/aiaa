@@ -8,7 +8,7 @@ Limited training data also confines this model's accuracy to ```demo_scene```.
 
 # How to Run
 
-There is no official implementation yet. For now, clone the repository and run ```main.py``` which will walk you through generating data, training, and running.
+There is no official implementation yet. For now, clone the repository and run ```main.py``` which will walk you through generating data, setting model parameters, training, and running.
 
 Run ```check_version.py``` to check Cuda Compatability.
 
@@ -41,5 +41,4 @@ Below is a comparison of a frame aliased, supersampled, and AIAA at 1080p (Click
 - Triton-Windows 3.4.0.post20
 
 # Changelog
-- Tuned Model Quality
-- Added ```main.py``` for execution
+- Added adjustable model parameters and automated execution

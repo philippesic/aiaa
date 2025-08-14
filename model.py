@@ -1,5 +1,6 @@
 import os
 import glob
+import json
 from PIL import Image
 import numpy as np
 from tqdm import tqdm
@@ -25,34 +26,28 @@ class AntiAliasingDataset(Dataset):
         return self.transform(alias), self.transform(ssaa)
 
 class AntiAliasingNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, layers, channels):
         super(AntiAliasingNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.relu1 = nn.ReLU(inplace=True)
+        self.layers = layers
 
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.relu2 = nn.ReLU(inplace=True)
+        self.convs = nn.ModuleList()
+        self.relus = nn.ModuleList()
 
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.relu3 = nn.ReLU(inplace=True)
+        for i in range(layers):
+            in_channels = 3 if i == 0 else channels
+            self.convs.append(nn.Conv2d(in_channels, channels, kernel_size=3, padding=1))
+            self.relus.append(nn.ReLU(inplace=True))
 
-        self.conv4 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.relu4 = nn.ReLU(inplace=True)
-
-        self.conv5 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
-        self.relu5 = nn.ReLU(inplace=True)
-
-        self.conv6 = nn.Conv2d(64, 3, kernel_size=3, padding=1)
+        self.output_conv = nn.Conv2d(channels, 3, kernel_size=3, padding=1)
 
     def forward(self, x):
-        out = self.relu1(self.conv1(x))
-        out = self.relu2(self.conv2(out))
-        out = self.relu3(self.conv3(out))
-        out = self.relu4(self.conv4(out))
-        out = self.relu5(self.conv5(out))
-        out = self.conv6(out)
+        out = x
+        for i in range(self.layers):
+            out = self.relus[i](self.convs[i](out))
+        out = self.output_conv(out)
         return out + x
-def train(width, height):
+
+def train(width, height, layers, epochs, channels):
     torch.backends.cudnn.benchmark = True
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using Device: {device}")
@@ -67,14 +62,16 @@ def train(width, height):
     )
     loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=2, pin_memory=True)
 
-    model = AntiAliasingNetwork().to(device)
+    model = AntiAliasingNetwork(int(layers), int(channels)).to(device)
     model = torch.compile(model)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     criterion = nn.L1Loss()
 
     scaler = GradScaler("cuda") 
-    EPOCHS = 20
+    EPOCHS = int(epochs)
     os.makedirs("./checkpoints", exist_ok=True)
+    best_perf = float(1.0)
+    model_path = ""
 
     for epoch in range(EPOCHS):
         model.train()
@@ -115,8 +112,22 @@ def train(width, height):
 
         print(f"Epoch {epoch+1} Loss: {epoch_loss / len(loader):.6f} | Precision: {precision:.4f} | Recall: {recall:.4f}")
         torch.save(model.state_dict(), f"./checkpoints/{height}/model_epoch{epoch+1}.pth")
+
+        if epoch_loss < best_perf:
+            best_perf = epoch_loss
+            model_path = f"./checkpoints/{height}/model_epoch{epoch+1}.pth"
+
         torch.cuda.empty_cache()
+
+    config = {
+        "layers": int(layers),
+        "channels": int(channels),
+        "model": model_path
+    }
+
+    with open(os.path.join(f"./checkpoints/{height}/", "config.json"), "w") as f:
+        json.dump(config, f, indent=2)
 
 if __name__ == "__main__":
     import sys
-    train(sys.argv[1], sys.argv[2])
+    train(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])

@@ -5,18 +5,24 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as TF
 import os
 import time
+import json
 from torch.amp import autocast
 
 def Infer(width, height):
-    print("here")
     TOTAL_FRAMETIME = 0
+
+    config_path = f"./checkpoints/{height}/config.json"
+    with open(config_path, "r") as f:
+        config = json.load(f)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = AntiAliasingNetwork().to(device, memory_format=torch.channels_last)
+    model = AntiAliasingNetwork(config["layers"], config["channels"]).to(device, memory_format=torch.channels_last)
     model.eval()
 
     model = torch.compile(model)
+    model.load_state_dict(torch.load(config["model"], map_location=device))
 
-    model.load_state_dict(torch.load(f"./checkpoints/{height}/model_epoch5.pth", map_location=device))
+    print(f"Using model from: " + config["model"])
 
     os.makedirs(f"./output/{height}/result", exist_ok=True)
 

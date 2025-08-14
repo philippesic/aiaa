@@ -82,7 +82,10 @@ def main():
             subprocess.run(command)
 
         case 3:
-            train(BASE_W, BASE_H)
+            CONV = input("Number of Convolution Layers (Default 6):\n")
+            EPOCH = input("Number of Epochs to Train (Default 20):\n")
+            CHANNEL = input("Number of Channels (Default 64):\n")
+            train(BASE_W, BASE_H, CONV, EPOCH, CHANNEL)
         
         case 4:
             Infer(BASE_W, BASE_H)
